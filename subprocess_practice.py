@@ -9,7 +9,7 @@ def run_program():
     command_line = "sleep 15 && echo \"My mission is done here!\""
     for pnum in range(1, 11):
         p = subprocess.Popen(
-            ["sleep", "15", "&&", "echo", "\"My mission is done here!\""],
+            ["sleep", "15", "&&", "echo", "My mission is done here!"],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE
         )
