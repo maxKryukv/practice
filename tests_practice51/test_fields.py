@@ -1,37 +1,56 @@
-import unittest
+"""
+Иногда возникает необходимость перенаправить вывод в нужное нам место внутри программы по ходу её выполнения.
+Реализуйте контекстный менеджер, который принимает два IO-объекта (например, открытые файлы)
+и перенаправляет туда стандартные потоки stdout и stderr.
 
-from flask import request
+Аргументы контекстного менеджера должны быть непозиционными,
+чтобы можно было ещё перенаправить только stdout или только stderr.
+"""
 
-from practice51 import app, registration
+import subprocess
+import traceback
+import sys
+from types import TracebackType
+from typing import Type, Literal, IO
 
 
-class TestFields(unittest.TestCase):
-    def setUp(self):
-        app.config["WTF_CSRF_ENABLED"] = False
-        app.config["TESTING"] = True
-        app.config["DEBUG"] = False
-        self.app = app.test_client()
-        self.base_url = '/registration'
+class Redirect:
+    def __init__(self, stdout: IO = None, stderr: IO = None) -> None:
+        self.stdout_file = stdout
+        self.stderr_file = stderr
 
-    def test_email(
+    def __enter__(self):
+        if self.stdout_file:
+            self.old_stdout = sys.stdout
+            sys.stdout = self.stdout_file
+        if self.stderr_file:
+            self.old_stderr = sys.stderr
+            sys.stderr = self.stderr_file
+
+
+    def __exit__(
             self,
-            email=None,
-            phone=99912345671,
-            name='Иванов иван',
-            index=187110,
-            comment='вход со двора'
-    ):
-        response = self.app.post(self.base_url, data=dict(
-            email=email,
-            phone=phone,
-            name=name,
-            index=index,
-            comment=comment
-        ))
-        response_text = response.data.decode()
-        expectation = "Invalid email", 400
-        self.assertEqual(response_text, expectation)
+            exc_type: Type[BaseException] | None,
+            exc_val: BaseException | None,
+            exc_tb: TracebackType | None
+    ) -> Literal[True] | None:
+        if self.stdout_file:
+            sys.stdout.close()
+            sys.stdout = self.old_stdout
+        if self.stderr_file:
+            sys.stderr.write(traceback.format_exc())
+            sys.stderr.close()
+            sys.stderr = self.old_stderr
 
 
-if __name__ == '__main__':
-    unittest.main()
+if __name__ == "__main__":
+    print('Hello stdout')
+    stdout_file = open('stdout.txt', 'w')
+    stderr_file = open('stderr.txt', 'w')
+
+    with Redirect(stdout=stdout_file, stderr=stderr_file):
+        print('Hello stdout.txt')
+        raise Exception('Hello stderr.txt')
+
+    print('Hello stdout again')
+    raise Exception('Hello stderr')
