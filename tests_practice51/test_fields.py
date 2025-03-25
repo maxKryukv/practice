@@ -27,7 +27,6 @@ class Redirect:
             self.old_stderr = sys.stderr
             sys.stderr = self.stderr_file
 
-
     def __exit__(
             self,
             exc_type: Type[BaseException] | None,
@@ -35,12 +34,14 @@ class Redirect:
             exc_tb: TracebackType | None
     ) -> Literal[True] | None:
         if self.stdout_file:
-            sys.stdout.close()
+            self.stdout_file.close()
             sys.stdout = self.old_stdout
         if self.stderr_file:
-            sys.stderr.write(traceback.format_exc())
-            sys.stderr.close()
+            if exc_tb and exc_val and exc_tb:
+                sys.stderr.write(traceback.format_exc())
+            self.stderr_file.close()
             sys.stderr = self.old_stderr
+        return
 
 
 if __name__ == "__main__":
